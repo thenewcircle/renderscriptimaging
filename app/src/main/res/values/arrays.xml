@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Order matches ImageFilter constants -->
+    <string-array name="filters">
+        <item>None</item>
+        <item>Ripple</item>
+        <item>Blur</item>
+        <item>Mono</item>
+        <item>Sharpen</item>
+        <item>Lighten</item>
+        <item>Darken</item>
+        <item>Edge Detect</item>
+        <item>Emboss</item>
+    </string-array>
+</resources>
