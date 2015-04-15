@@ -52,7 +52,8 @@ public class MainActivity extends Activity
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
         if (REQUEST_PICK == requestCode
                 && RESULT_OK == resultCode
                 && data.getData() != null) {

@@ -11,10 +11,6 @@ float scalar;
 float damper;
 //Sine frequency, larger values show more ripples
 float frequency;
-//Darkest multiplier value (0=black, 1=original, >1=lighter)
-const float minMult = 0.f;
-//Lightest multiplier value (0=black, 1=original, >1=lighter)
-const float maxMult = 1.5f;
 
 void root(const uchar4* v_in, uchar4* v_out, const void* usrData,
         uint32_t x, uint32_t y)
@@ -35,9 +31,10 @@ void root(const uchar4* v_in, uchar4* v_out, const void* usrData,
         float shiftedRadius = radius - minRadius;
 
         //Determine sine function multiplier based on distance
-        float multiplier = (scalar * exp(-shiftedRadius * damper) * -sin(shiftedRadius * frequency)) + 1;
-        //Lighten or darken pixel, within min/max range defined
-        float3 transformed = f4.rgb * multiplier; //mix(minMult, maxMult, multiplier);
+        float multiplier = (scalar * exp(-shiftedRadius * damper)
+                * -sin(shiftedRadius * frequency)) + 1;
+        //Lighten or darken pixel
+        float3 transformed = f4.rgb * multiplier;
         *v_out = rsPackColorTo8888(transformed);
     }
 }

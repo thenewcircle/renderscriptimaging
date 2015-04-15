@@ -2,15 +2,5 @@
     <string name="app_name">Renderscript Imaging</string>
     <string name="text_filter">Select a Filter:</string>
     <string name="text_save">Save New Image</string>
-
-    <string name="option_none">None</string>
-    <string name="option_ripple">Ripple</string>
-    <string name="option_blur">Blur</string>
-    <string name="option_mono">Mono</string>
-    <string name="option_sharpen">Sharpen</string>
-    <string name="option_lighten">Lighten</string>
-    <string name="option_darken">Darken</string>
-    <string name="option_edge">Edge Detect</string>
-    <string name="option_emboss">Emboss</string>
     <string name="text_pick">Pick An Image</string>
 </resources>

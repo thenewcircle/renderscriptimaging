@@ -19,19 +19,19 @@ public class ImageFilter {
     public static final int FILTER_EDGE = 7;
     public static final int FILTER_EMBOSS = 8;
 
-    private RenderScript mRenderScriptContext;
+    private RenderScript mRSContext;
     private Resources mResources;
     private Allocation mInputAllocation;
     private Bitmap mFilteredResult;
 
     public ImageFilter(Context context) {
         //Create the RenderScript context
-        mRenderScriptContext = RenderScript.create(context);
+        mRSContext = RenderScript.create(context);
         mResources = context.getResources();
     }
 
     public void destroy() {
-        mRenderScriptContext.destroy();
+        mRSContext.destroy();
     }
 
     /*
@@ -41,7 +41,7 @@ public class ImageFilter {
      */
     public void setInputBitmap(Bitmap bitmap) {
         //Construct an allocation for the new original
-        mInputAllocation = Allocation.createFromBitmap(mRenderScriptContext,
+        mInputAllocation = Allocation.createFromBitmap(mRSContext,
                 bitmap,
                 Allocation.MipmapControl.MIPMAP_NONE,
                 Allocation.USAGE_SCRIPT);
@@ -65,13 +65,13 @@ public class ImageFilter {
     public void applyFilter(int filter) {
         if (mInputAllocation == null) return;
 
-        final Allocation output = Allocation.createTyped(mRenderScriptContext,
+        final Allocation output = Allocation.createTyped(mRSContext,
                 mInputAllocation.getType());
 
         switch (filter) {
             case FILTER_RIPPLE:
                 //Our custom script defined in ripple.rs
-                ScriptC_ripple scriptR = new ScriptC_ripple(mRenderScriptContext,
+                ScriptC_ripple scriptR = new ScriptC_ripple(mRSContext,
                         mResources, R.raw.ripple);
 
                 //Set up ripple control values
@@ -90,16 +90,16 @@ public class ImageFilter {
                 break;
             case FILTER_BLUR:
                 ScriptIntrinsicBlur scriptBlur =
-                        ScriptIntrinsicBlur.create(mRenderScriptContext,
-                                Element.U8_4(mRenderScriptContext));
+                        ScriptIntrinsicBlur.create(mRSContext,
+                                Element.U8_4(mRSContext));
                 scriptBlur.setRadius(25f);
                 scriptBlur.setInput(mInputAllocation);
                 scriptBlur.forEach(output);
                 break;
             case FILTER_MONO:
                 ScriptIntrinsicColorMatrix scriptColor =
-                        ScriptIntrinsicColorMatrix.create(mRenderScriptContext,
-                                Element.U8_4(mRenderScriptContext));
+                        ScriptIntrinsicColorMatrix.create(mRSContext,
+                                Element.U8_4(mRSContext));
                 scriptColor.setGreyscale();
                 scriptColor.forEach(mInputAllocation, output);
                 break;
@@ -110,8 +110,8 @@ public class ImageFilter {
             case FILTER_EMBOSS:
                 //Convolution filters
                 ScriptIntrinsicConvolve3x3 scriptC =
-                        ScriptIntrinsicConvolve3x3.create(mRenderScriptContext,
-                                Element.U8_4(mRenderScriptContext));
+                        ScriptIntrinsicConvolve3x3.create(mRSContext,
+                                Element.U8_4(mRSContext));
                 scriptC.setCoefficients(
                         ConvolutionFilter.getCoefficients(filter));
                 scriptC.setInput(mInputAllocation);
