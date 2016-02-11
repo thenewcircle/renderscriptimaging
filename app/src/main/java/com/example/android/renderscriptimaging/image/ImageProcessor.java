@@ -22,6 +22,10 @@ import java.io.InputStream;
 public class ImageProcessor implements Handler.Callback {
     private static final String TAG = ImageProcessor.class.getSimpleName();
 
+    /* Message types to distinguish commands in the Handler */
+    private static final int MESSAGE_LOAD = 1;
+    private static final int MESSAGE_FILTER = 2;
+
     /* Callback interface for image results */
     public interface OnImageCompletedListener {
         /**
@@ -40,14 +44,14 @@ public class ImageProcessor implements Handler.Callback {
     private Handler mCallbackHandler;
 
     /* Local reference to the RenderScript filters */
-    //TODO: Get a reference to the RenderScript filters
+    private ImageFilter mImageFilter;
     private Resources mResources;
 
     /* Local callback for asynchronous results */
     private OnImageCompletedListener mImageAvailableListener;
 
     public ImageProcessor(Context context, OnImageCompletedListener listener) {
-        //TODO: Create a new RenderScript filters object
+        mImageFilter = new ImageFilter(context);
         mResources = context.getResources();
 
         mImageAvailableListener = listener;
@@ -66,12 +70,21 @@ public class ImageProcessor implements Handler.Callback {
     /* Callbacks invoked on the background Looper thread for blocking work */
     @Override
     public boolean handleMessage(Message msg) {
-        //Request to load file from assets
-        String filename = (String) msg.obj;
-        handleImageLoad(filename);
-
-        //TODO: Process an incoming image filter request
-
+        switch (msg.what) {
+            case MESSAGE_LOAD:
+                //Request to load file from assets
+                String filename = (String) msg.obj;
+                handleImageLoad(filename);
+                break;
+            case MESSAGE_FILTER:
+                //Request to apply filter to current image
+                int filter = msg.arg1;
+                handleImageFilter(filter);
+                break;
+            default:
+                //We can't handle this message
+                return false;
+        }
         return true;
     }
 
@@ -80,6 +93,7 @@ public class ImageProcessor implements Handler.Callback {
         try {
             long now = System.currentTimeMillis();
             Bitmap decoded = decodeScaledImage(filename);
+            mImageFilter.setInputBitmap(decoded);
             long duration = System.currentTimeMillis() - now;
             //Post result back to the main thread
             postImageCallback(decoded, duration);
@@ -88,6 +102,18 @@ public class ImageProcessor implements Handler.Callback {
             //Post error result to the main thread
             postImageCallback(null, 0);
         }
+    }
+
+    /* Perform the blocking work associated with an image filter */
+    private void handleImageFilter(int filter) {
+        long now = System.currentTimeMillis();
+        if (ImageFilter.FILTER_NONE == filter) {
+            mImageFilter.clearFilter();
+        } else {
+            mImageFilter.applyFilter(filter);
+        }
+        long duration = System.currentTimeMillis() - now;
+        postImageCallback(mImageFilter.getBitmap(), duration);
     }
 
     /* Trigger the result callback on the application's main thread */
@@ -108,7 +134,7 @@ public class ImageProcessor implements Handler.Callback {
      * @param filename Name of the file stored in application assets.
      */
     public void loadImageAsset(String filename) {
-        Message msg = mBackgroundHandler.obtainMessage(0, filename);
+        Message msg = mBackgroundHandler.obtainMessage(MESSAGE_LOAD, filename);
         msg.sendToTarget();
     }
 
@@ -120,7 +146,8 @@ public class ImageProcessor implements Handler.Callback {
      * @param filter Chosen filter algorithm
      */
     public void applyImageFilter(int filter) {
-        //TODO: Post the filter work onto the background Looper thread
+        Message msg = mBackgroundHandler.obtainMessage(MESSAGE_FILTER, filter, 0);
+        msg.sendToTarget();
     }
 
     /**
@@ -131,7 +158,7 @@ public class ImageProcessor implements Handler.Callback {
      */
     public boolean destroy() {
         mImageAvailableListener = null;
-        //TODO: Tear down the RenderScript filters
+        mImageFilter.destroy();
 
         return mHandlerThread.quit();
     }

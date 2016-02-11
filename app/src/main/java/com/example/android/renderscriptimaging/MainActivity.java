@@ -59,7 +59,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onItemSelected(AdapterView<?> parent, View view,
                                int position, long id) {
-        //TODO: Pass the selection through to the ImageProcessor
+        mImageProcessor.applyImageFilter(position);
+        mProgress.setVisibility(View.VISIBLE);
     }
 
     @Override
