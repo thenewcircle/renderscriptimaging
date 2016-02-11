@@ -12,4 +12,18 @@
         <item>Edge Detect</item>
         <item>Emboss</item>
     </string-array>
+
+    <!-- Visible names for image options -->
+    <string-array name="images">
+        <item>Leopard</item>
+        <item>Beach</item>
+        <item>Leaf</item>
+    </string-array>
+
+    <!-- Asset file names for images -->
+    <string-array name="image_files">
+        <item>leopard.jpg</item>
+        <item>beach.jpg</item>
+        <item>leaf.jpg</item>
+    </string-array>
 </resources>

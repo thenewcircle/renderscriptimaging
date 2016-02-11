@@ -1,10 +1,11 @@
 #pragma version(1)
 #pragma rs java_package_name(com.example.android.renderscriptimaging)
 
+//Location of wave center point
 float centerX;
 float centerY;
+//Minimum distance from center before waves begin
 float minRadius;
-
 //Amplitude control of the wave peaks
 float scalar;
 //Wave Dampener, larger values damp out the ripples sooner

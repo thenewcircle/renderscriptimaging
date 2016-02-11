@@ -1,29 +1,32 @@
 package com.example.android.renderscriptimaging;
 
-import android.app.Activity;
-import android.content.Intent;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 
-import java.io.IOException;
-import java.io.InputStream;
+import com.example.android.renderscriptimaging.image.ImageProcessor;
 
-public class MainActivity extends Activity
-        implements AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements
+        AdapterView.OnItemSelectedListener,
+        DialogInterface.OnClickListener,
+        ImageProcessor.OnImageCompletedListener {
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int REQUEST_PICK = 42;
 
     private ImageView mImagePreview;
     private Spinner mFilterSelector;
-    private ImageFilter mImageFilter;
+    private ProgressBar mProgress;
+    private TextView mResultText;
+
+    private ImageProcessor mImageProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,8 +35,10 @@ public class MainActivity extends Activity
 
         mImagePreview = (ImageView) findViewById(R.id.image_preview);
         mFilterSelector = (Spinner) findViewById(R.id.filter_selector);
+        mProgress = (ProgressBar) findViewById(R.id.progress);
+        mResultText = (TextView) findViewById(R.id.text_result);
 
-        mImageFilter = new ImageFilter(this);
+        mImageProcessor = new ImageProcessor(this, this);
 
         ArrayAdapter<CharSequence> adapter = ArrayAdapter
                 .createFromResource(this, R.array.filters,
@@ -48,78 +53,52 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mImageFilter.destroy();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data) {
-        if (REQUEST_PICK == requestCode
-                && RESULT_OK == resultCode
-                && data.getData() != null) {
-            try {
-                Bitmap decoded = decodeScaledImage(data.getData());
-                mImageFilter.setInputBitmap(decoded);
-                mImagePreview.setImageBitmap(decoded);
-            } catch (Exception e) {
-                Log.w(TAG, "Unable to decode selected image", e);
-            }
-
-            //Reset the filter selector on a new image
-            mFilterSelector.setSelection(0);
-        }
+        mImageProcessor.destroy();
     }
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view,
                                int position, long id) {
-        if (ImageFilter.FILTER_NONE == position) {
-            mImageFilter.clearFilter();
-        } else {
-            mImageFilter.applyFilter(position);
-        }
-
-        mImagePreview.setImageBitmap(mImageFilter.getBitmap());
+        mImageProcessor.applyImageFilter(position);
+        mProgress.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) { }
 
-    //Pick an image from the device library
+    /* Pick an image from the assets folder */
     public void onPickImageClick(View v) {
-        Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
-        pickIntent.setType("image/*");
-        startActivityForResult(pickIntent, REQUEST_PICK);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.title_pick)
+                .setItems(R.array.images, this)
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
-    /*
-     * Down-sample and decode a user-selected image.
-     */
-    private Bitmap decodeScaledImage(Uri contentUri) throws IOException {
-        BitmapFactory.Options options = new BitmapFactory.Options();
+    /* Load the selected assets file */
+    private void setSelectedImage(String filename) {
+        mImageProcessor.loadImageAsset(filename);
+        mProgress.setVisibility(View.VISIBLE);
 
-        //First, obtain the image size
-        options.inJustDecodeBounds = true;
-        InputStream in = getContentResolver()
-                .openInputStream(contentUri);
-        BitmapFactory.decodeStream(in, null, options);
-        in.close();
+        //Reset the filter selector on a new image
+        mFilterSelector.setSelection(0);
+    }
 
-        //Scale image down if larger than the display
-        int scaledWidth = options.outWidth /
-                getResources().getDisplayMetrics().widthPixels;
-        if (scaledWidth > 1) {
-            //This sets the downsample scale factor
-            options.inSampleSize = scaledWidth;
-        }
-        //Now decode the image for real
-        options.inJustDecodeBounds = false;
-        in = getContentResolver().openInputStream(contentUri);
-        Bitmap image = BitmapFactory
-                .decodeStream(in, null, options);
+    /* Triggered by selecting an item in the image dialog */
+    @Override
+    public void onClick(DialogInterface dialog, int which) {
+        String[] imageFiles = getResources()
+                .getStringArray(R.array.image_files);
 
-        Log.d(TAG, "Decoded " + image.getWidth() + "x" + image.getHeight()
-                + " image");
-        return image;
+        setSelectedImage(imageFiles[which]);
+    }
+
+    /* Callback invoked when the ImageProcessor has a new image to display */
+    @Override
+    public void onImageAvailable(Bitmap image, long duration) {
+        mProgress.setVisibility(View.INVISIBLE);
+        mImagePreview.setImageBitmap(image);
+        mResultText.setText(String.format("Request completed in %.3fs",
+                duration / 1000f));
     }
 }

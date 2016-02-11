@@ -1,4 +1,4 @@
-package com.example.android.renderscriptimaging;
+package com.example.android.renderscriptimaging.image;
 
 /**
  * Coefficients for Common Convolution Filters

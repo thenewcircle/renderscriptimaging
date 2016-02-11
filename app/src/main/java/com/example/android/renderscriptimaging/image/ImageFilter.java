@@ -1,11 +1,23 @@
-package com.example.android.renderscriptimaging;
+package com.example.android.renderscriptimaging.image;
 
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.support.v8.renderscript.*;
+import android.support.v8.renderscript.Allocation;
+import android.support.v8.renderscript.Element;
+import android.support.v8.renderscript.RenderScript;
+import android.support.v8.renderscript.ScriptIntrinsicBlur;
+import android.support.v8.renderscript.ScriptIntrinsicColorMatrix;
+import android.support.v8.renderscript.ScriptIntrinsicConvolve3x3;
 
+import com.example.android.renderscriptimaging.R;
+import com.example.android.renderscriptimaging.ScriptC_ripple;
+
+/**
+ * This class manages a RenderScript context and Allocations. It applies
+ * a chosen filter algorithm to the Bitmap pixels in the Allocation.
+ */
 public class ImageFilter {
 
     /** Supported Image Filter Algorithms */
@@ -19,9 +31,12 @@ public class ImageFilter {
     public static final int FILTER_EDGE = 7;
     public static final int FILTER_EMBOSS = 8;
 
+    /* Local RenderScript context, should be cached */
     private RenderScript mRSContext;
     private Resources mResources;
+    /* Cached allocation representing the input image */
     private Allocation mInputAllocation;
+    /* Post-filtered result image */
     private Bitmap mFilteredResult;
 
     public ImageFilter(Context context) {
@@ -30,14 +45,19 @@ public class ImageFilter {
         mResources = context.getResources();
     }
 
+    /**
+     * Tear down and release the associated RenderScript context.
+     */
     public void destroy() {
         mRSContext.destroy();
     }
 
-    /*
+    /**
      * Called each time a new original is selected. Caching these
      * items reduces memory copies while the user picks their
      * appropriate filter.
+     *
+     * @param bitmap New image to be used for subsequent filters
      */
     public void setInputBitmap(Bitmap bitmap) {
         //Construct an allocation for the new original
@@ -49,8 +69,9 @@ public class ImageFilter {
         mFilteredResult = bitmap.copy(bitmap.getConfig(), true);
     }
 
-    /*
-     * Return the result bitmap back to match the original
+    /**
+     * Set the result bitmap to match the original, removing any applied
+     * filters.
      */
     public void clearFilter() {
         if (mInputAllocation == null) return;
@@ -59,8 +80,10 @@ public class ImageFilter {
         mInputAllocation.copyTo(mFilteredResult);
     }
 
-    /*
-     * Apply the selected filter algorithm with RenderScript
+    /**
+     * Apply the selected filter algorithm with RenderScript.
+     *
+     * @param filter Filter algorithm constant defined by {@link ImageFilter}
      */
     public void applyFilter(int filter) {
         if (mInputAllocation == null) return;
@@ -125,7 +148,9 @@ public class ImageFilter {
         output.copyTo(mFilteredResult);
     }
 
-    //External access to the result for display/save
+    /**
+     * Return the result image from the last applied filter.
+     */
     public Bitmap getBitmap() {
         return mFilteredResult;
     }
